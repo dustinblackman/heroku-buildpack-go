@@ -427,8 +427,8 @@ case ${TOOL} in
 
         fi
 
-        PATH="${govendorPath}:$PATH"
         eval "$(setupGOPATH ${name})"
+        PATH="${govendorPath}:${GOBIN}:$PATH"
         vendorJSON="${src}/vendor/vendor.json"
 
         pkgs=${GO_INSTALL_PACKAGE_SPEC:-$(<${vendorJSON} jq -r 'if .heroku.install then .heroku.install | join(" ") else "default" end')}
@@ -442,6 +442,13 @@ case ${TOOL} in
         then
             step "Fetching any unsaved dependencies (govendor sync)"
             govendor sync
+        fi
+
+        preinstall="$(<${vendorJSON} jq -r '.heroku.preinstall')"
+        if test "$preinstall" != "null"
+        then
+            step "Running .heroku.preinstall"
+            eval $preinstall
         fi
         massagePkgSpecForVendor
 
